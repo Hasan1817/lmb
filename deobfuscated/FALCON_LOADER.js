@@ -23,7 +23,7 @@
     // Authorized device fingerprints (add fingerprints here)
     // ⚠️ IMPORTANT: Remove '*' and add specific fingerprints for production!
     AUTHORIZED_DEVICES: [
-      // Format: 'FINGERPRINT_HASH'
+      '5C17D8738F61DE7B7CB9A2710CFEE465'
       // Get fingerprint using DEVICE_INFO_COLLECTOR.js
       // Example: 'A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6'
       '*' // ⚠️ REMOVE THIS LINE FOR PRODUCTION - currently allows all devices
