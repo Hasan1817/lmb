@@ -203,10 +203,17 @@
     },
     
     // Generate config for FALCON_ALL_IN_ONE.js
-    generateConfig() {
+    // expiryDate format: 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:MM:SS' or null for unlimited
+    generateConfig(expiryDate = null) {
       const devices = loadDevices();
       const keys = Object.keys(devices);
       const multiKeys = keys.filter(k => devices[k].multiInstance);
+      
+      // Format expiry
+      let expiryStr = 'null';
+      if (expiryDate) {
+        expiryStr = `'${expiryDate}'`;
+      }
       
       const config = `
   // ═══════════════════════════════════════════════════════════════════════════
@@ -214,24 +221,54 @@
   // ═══════════════════════════════════════════════════════════════════════════
   
   const AUTH_CONFIG = {
+    // Authorized device fingerprints
     AUTHORIZED_DEVICES: [
 ${keys.length > 0 ? keys.map(k => `      '${k}',  // ${devices[k].name}`).join('\n') : "      // Add fingerprints here"}
     ],
+    
+    // Multiple tab permission
     MULTI_INSTANCE_ALLOWED: [
 ${multiKeys.length > 0 ? multiKeys.map(k => `      '${k}',  // ${devices[k].name}`).join('\n') : "      // Add fingerprints here"}
     ],
-    VERSION: '2.1.0'
+    
+    // ⏰ EXPIRY SETTINGS
+    // Format: 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:MM:SS' or null for unlimited
+    EXPIRY_DATE: ${expiryStr},
+    
+    // Tampering detection (minutes)
+    TAMPERING_THRESHOLD: 5,
+    
+    VERSION: '2.2.0'
   };
 `;
       
       console.log('%c📋 Config Generated - Copy this to FALCON_ALL_IN_ONE.js:', 'color:#00d4ff;font-size:14px');
       console.log(config);
       
+      if (expiryDate) {
+        const expDate = new Date(expiryDate);
+        const daysLeft = Math.ceil((expDate - new Date()) / (1000 * 60 * 60 * 24));
+        console.log(`%c⏰ Expiry: ${expDate.toLocaleDateString('en-GB')} (${daysLeft} days from now)`, 'color:#ffb800');
+      } else {
+        console.log('%c⏰ Expiry: Unlimited (no expiry date set)', 'color:#00ff9d');
+      }
+      
       navigator.clipboard.writeText(config).then(() => {
         console.log('%c✓ Copied to clipboard!', 'color:#00ff9d');
       });
       
       return config;
+    },
+    
+    // Helper to create expiry date
+    setExpiry(days) {
+      const date = new Date();
+      date.setDate(date.getDate() + days);
+      const expiry = date.toISOString().split('T')[0] + 'T23:59:59';
+      console.log(`%c⏰ Expiry date for ${days} days:`, 'color:#00d4ff;font-size:14px');
+      console.log('%c' + expiry, 'color:#00ff9d;font-family:monospace');
+      console.log('%cUse: FalconAdmin.generateConfig("' + expiry + '")', 'color:#7d8590');
+      return expiry;
     },
     
     // Export devices as JSON
@@ -286,8 +323,13 @@ ${multiKeys.length > 0 ? multiKeys.map(k => `      '${k}',  // ${devices[k].name
   FalconAdmin.listDevices()                    - Show all devices
   FalconAdmin.verifyDevice(fp)                 - Check if device is authorized
 
+%c⏰ Expiry & Time Limit:
+%c  FalconAdmin.setExpiry(30)                    - Get expiry date for 30 days
+  FalconAdmin.generateConfig('2025-06-30')     - Config with specific expiry
+  FalconAdmin.generateConfig()                 - Config without expiry (unlimited)
+
 %c⚙️ Configuration:
-%c  FalconAdmin.generateConfig()                - Generate config for script
+%c  FalconAdmin.generateConfig(expiry)          - Generate config for script
   FalconAdmin.exportDevices()                  - Export as JSON
   FalconAdmin.importDevices(json)              - Import from JSON
   FalconAdmin.clearAll()                       - Remove all devices
@@ -295,9 +337,10 @@ ${multiKeys.length > 0 ? multiKeys.map(k => `      '${k}',  // ${devices[k].name
 %c📋 Example Workflow:
 %c  1. User runs DEVICE_INFO_COLLECTOR.js → gets fingerprint
   2. Admin runs: FalconAdmin.addDevice("ABC123...", "User Name")
-  3. Admin runs: FalconAdmin.generateConfig()
-  4. Admin pastes config into FALCON_ALL_IN_ONE.js
-  5. User gets the updated script
+  3. Admin runs: FalconAdmin.setExpiry(30)     → gets expiry for 30 days
+  4. Admin runs: FalconAdmin.generateConfig("2025-06-30T23:59:59")
+  5. Admin pastes config into FALCON_ALL_IN_ONE.js
+  6. User gets the updated script
 `,
         'font-size:20px;font-weight:bold;color:#00d4ff',
         'color:#00ff9d;font-weight:bold',
@@ -305,6 +348,8 @@ ${multiKeys.length > 0 ? multiKeys.map(k => `      '${k}',  // ${devices[k].name
         'color:#ffb800;font-weight:bold',
         'color:#e6edf3',
         'color:#8b5cf6;font-weight:bold',
+        'color:#e6edf3',
+        'color:#ff3b5c;font-weight:bold',
         'color:#e6edf3'
       );
     }
